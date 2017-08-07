@@ -1,6 +1,6 @@
 #!/bin/bash
-azure group create -n "$1" -l "West US"
-azure group deployment create -f azuredeploy.json -e azuredeploy.parameters.json $1 boshdeploy > /dev/null 2>&1 &
+azure group create -n "$1" -l "West Europe"
+azure group deployment create -f myazuredeploy.json $1 boshdeploy > /dev/null 2>&1 &
 
 vmCount=0
 printf "Waiting for jumpbox "
@@ -36,4 +36,4 @@ do
 done
 printf " done\n"
 
-ssh -oStrictHostKeyChecking=no pivotal@$jumpboxIP
+ssh ubuntu@$jumpboxIP -i /Users/dflick/Documents/Techstuff/Azure/opsman

@@ -169,4 +169,4 @@ if [ -d "recipes/$recipe" ]; then
    exit 1
  fi
 
- cat stdout > /home/pivotal/install_log.txt
+ cat stdout > /home/ubuntu/install_log.txt
