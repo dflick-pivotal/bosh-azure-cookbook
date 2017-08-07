@@ -8,7 +8,7 @@ wget https://azurecliprod.blob.core.windows.net/install.py
 yes "" | python install.py
 
 PATH=$PATH:/root/bin
-HOME=/home/pivotal
+HOME=/home/ubuntu
 
 # clone bosh-deployment repo
 git clone https://github.com/cloudfoundry/bosh-deployment /tmp/bosh-deployment
@@ -60,11 +60,11 @@ az storage table create --account-name $storageAccount --account-key $storageKey
 
 # Deploy director
 
-su -l pivotal sh -c "
+su -l ubuntu sh -c "
 bosh --tty create-env /tmp/bosh-deployment/bosh.yml \
   -o /tmp/bosh-deployment/azure/cpi.yml \
-  --state=/home/pivotal/azure-bosh-director.yml \
-  --vars-store=/home/pivotal/azure-bosh-director-creds.yml  \
+  --state=/home/ubuntu/azure-bosh-director.yml \
+  --vars-store=/home/ubuntu/azure-bosh-director-creds.yml  \
   -v director_name=azure-bosh \
   -v internal_cidr=10.2.0.0/24 \
   -v internal_gw=10.2.0.1 \
@@ -79,10 +79,10 @@ bosh --tty create-env /tmp/bosh-deployment/bosh.yml \
   -v storage_account_name=$storageAccount \
   -v default_security_group=nsg-bosh"
 
-su -l pivotal sh -c "bosh --tty -e 10.2.0.10 --ca-cert <(bosh int azure-bosh-director-creds.yml --path /director_ssl/ca) alias-env bosh-azure"
+su -l ubuntu sh -c "bosh --tty -e 10.2.0.10 --ca-cert <(bosh int azure-bosh-director-creds.yml --path /director_ssl/ca) alias-env bosh-azure"
 
-adminPassword=$(ruby -ryaml -e "puts YAML::load(open(ARGV.first).read)['admin_password']" /home/pivotal/azure-bosh-director-creds.yml)
-su -l pivotal sh -c "bosh --tty -e bosh-azure login --client=admin --client-secret=$adminPassword"
+adminPassword=$(ruby -ryaml -e "puts YAML::load(open(ARGV.first).read)['admin_password']" /home/ubuntu/azure-bosh-director-creds.yml)
+su -l ubuntu sh -c "bosh --tty -e bosh-azure login --client=admin --client-secret=$adminPassword"
 
 # Extract the recipe book
 archive=$(ls *.tar.gz | head -n 1)
@@ -101,7 +101,7 @@ if [ -d "recipes/$recipe" ]; then
   i=0
   while [ "$i" -le "$stemcellUbound" ]; do
     stemcell=$(cat recipes/$recipe/index.json | jq -r ".stemcells[$i]")
-    su -l pivotal sh -c "bosh --tty -e bosh-azure upload-stemcell $stemcell"
+    su -l ubuntu sh -c "bosh --tty -e bosh-azure upload-stemcell $stemcell"
     i=$(($i + 1))
   done
 
@@ -109,7 +109,7 @@ if [ -d "recipes/$recipe" ]; then
   i=0
   while [ "$i" -le "$releaseUbound" ]; do
     release=$(cat recipes/$recipe/index.json | jq -r ".releases[$i]")
-    su -l pivotal sh -c "bosh --tty -e bosh-azure upload-release $release"
+    su -l ubuntu sh -c "bosh --tty -e bosh-azure upload-release $release"
     i=$(($i + 1))
   done
 
@@ -144,7 +144,7 @@ if [ -d "recipes/$recipe" ]; then
   cp cloud_config.yml $HOME
 
   # Apply cloud_config
-  su -l pivotal sh -c "bosh -n --tty -e bosh-azure update-cloud-config cloud_config.yml"
+  su -l ubuntu sh -c "bosh -n --tty -e bosh-azure update-cloud-config cloud_config.yml"
 
   # Get IPs from public pool
   export poolIP0=$(az network public-ip list | jq -r "map(select(.resourceGroup == \"${vmResGroup,,}\") | select(.tags == {\"poolIp\": \"True\"}))[0].ipAddress")
@@ -156,13 +156,13 @@ if [ -d "recipes/$recipe" ]; then
   cp manifest.yml $HOME
 
   # Interpolate manifest
-  su -l pivotal sh -c "bosh -n --tty int manifest.yml --vars-store=creds.yml"
+  su -l ubuntu sh -c "bosh -n --tty int manifest.yml --vars-store=creds.yml"
 
   # Deploy
-  su -l pivotal sh -c "bosh -n --tty -e bosh-azure deploy -l creds.yml -d $recipe manifest.yml"
+  su -l ubuntu sh -c "bosh -n --tty -e bosh-azure deploy -l creds.yml -d $recipe manifest.yml"
 
   # Copy creds up
-  az storage blob upload -c deploymentcreds -f /home/pivotal/creds.yml -n creds.yml --account-key $storageKey --account-name $storageAccount
+  az storage blob upload -c deploymentcreds -f /home/ubuntu/creds.yml -n creds.yml --account-key $storageKey --account-name $storageAccount
 
  else
    echo "Recipe '$recipe' does not exist"
