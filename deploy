@@ -1,6 +1,6 @@
 #!/bin/bash
 azure group create -n "$1" -l "West Europe"
-azure group deployment create -f myazuredeploy.json $1 boshdeploy > /dev/null 2>&1 &
+azure group deployment create -f azuredeploy.json $1 boshdeploy > /dev/null 2>&1 &
 
 vmCount=0
 printf "Waiting for jumpbox "
